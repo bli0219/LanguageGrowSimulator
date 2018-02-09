@@ -2,116 +2,85 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum Culture {
-    European,
-    Asian
-}
 
-public enum Country: int {
-    US = 1,
-    Canada = 2
-}
-
-public enum Language {
-    English,
-    Spanish
-}
-
-[System.Serializable]
 public class Region : MonoBehaviour {
 
-	/*
-    public float locationX;
-    public float locationY;
-    public float capacity;
-    public float influence;
-    public float immiBarrier;
-    public Culture culture;
-    public Country country;
-    public Language official;
-	*/
-	[System.Serializable] 
-	public class LanguagePopulation
-	{
-		public Language language;
-		public float population;
-	}
+    public static Dictionary<Language, Color> ColorDict = new Dictionary<Language, Color> {
+        {Language.English, Color.red },
+        {Language.Spanish, Color.blue}
+    };
 
-	[System.Serializable] 
-	public class MigrationRate
-	{
-		public Region dest;
-		public float rate;
+    public LanguageGroup[] defaultLP() {
+        return new LanguageGroup[] {
+            new LanguageGroup(Language.English, 1f), new LanguageGroup(Language.Spanish, 0f)
+        };
+    }
 
-		public MigrationRate(Region dest, float rate) {
-			this.dest = dest;
-			this.rate = rate;
-		}
-	}
+    public LanguageGroup[] first;
+    public LanguageGroup[] secondary;
+    public MigrationRate[] mr;
+    public bool initialized = false;
 
-	public LanguagePopulation[] first;
-	public LanguagePopulation[] secondary;
-	public MigrationRate[] mr; 
-	public bool paused = true;
+    private SpriteRenderer render;
 
-    void Start () {
+    private void Start() {
+        render = GetComponent<SpriteRenderer>();
+    }
 
+    public void GetReady() {
+        Region[] regions = FindObjectsOfType<Region>();
+        mr = new MigrationRate[regions.Length - 1];
+        int index = 0;
+        for (int i = 0; i != regions.Length; i++) {
+            if (regions[i] != this) {
+                mr[index] = new MigrationRate(regions[i], 0f);
+                index++;
+            }
+                
+        }
 
+        first = defaultLP();
+        secondary = defaultLP();
 
-//		foreach (Region r in FindObjectsOfType<Region> ()) {
-//			if (r != this) {
-//				migrateRates[
-//			}
-//		}
-	}
+        initialized = true;
+    }
 
-	public void Unpause() {
-		Region[] regions = FindObjectsOfType<Region> ();
-		mr = new MigrationRate[regions.Length-1];
-		for (int i = 0; i!=regions.Length-1; i++) {
-			mr [i] = new MigrationRate (regions [i], 0f);
-		}
-
-		first = new LanguagePopulation[2];
-		secondary = new LanguagePopulation[2];
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
-
-	void Migrate() {
-		if (!paused) {
-//			
-			foreach (MigrationRate mrPair in mr) {
-
-//				first
-//				migrateRate.dest   migrateRate.rate * 
-			
-//				float migrateRate = migratePair.Value; // percent migrating to the dest
-//				 
-//				foreach (KeyValuePair<Language,float> speakerPair in first ) {
-//
-//					Language language = speakerPair.Key;
-//					float migrants = speakerPair.Value * migrateRate; // migrants with this language
-//
-//					first[language] -= migrants; // migrants leave
-//					dest.first[language] += migrants; // migrants arrive
-//				}
-//
-//				foreach (KeyValuePair<Language,float> speakerPair in secondary) {
-//
-//					Language language = speakerPair.Key;
-//					float migrants = speakerPair.Value * migrateRate; // migrants with this language
-//
-//					first[language] -= migrants; // migrants leave
-//					dest.first[language] += migrants; // migrants arrive
-//				}
-//
-			}
-		}
-	}
+    private void UpdateColor() {
+        LanguageGroup mostSpoken = first[0];
+        float population = 0f;
+        foreach (LanguageGroup lp in first) {
+            population += lp.population;
+            if (lp.population > mostSpoken.population) {
+                mostSpoken = lp;
+            }
+        }
+        Color color = ColorDict[mostSpoken.language];
+        color.a = (mostSpoken.population / population);
+        render.color = color;
+    }
 
 
+    public void GetFirst(Language l, float p) {
+        for (int i=0; i!=first.Length; i++) {
+            if (first[i].language == l) {
+                first[i].population += p;
+                return;
+            }
+        }
+    }
+    void Update() {
+        if (initialized)
+            UpdateColor();
+    }
+
+    public void Migrate() {
+        foreach (MigrationRate mrPair in mr) {
+
+            foreach (LanguageGroup lg in first) {
+                float migrants = lg.population * mrPair.rate;
+                lg.population -= migrants;
+                mrPair.dest.GetFirst(lg.language, migrants);
+            }
+        }
+    }
 }
