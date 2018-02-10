@@ -51,7 +51,7 @@ public class SimulatorManager : MonoBehaviour {
             counter++;
             if (counter % 30 == 0) {
                 foreach (Region r in FindObjectsOfType<Region>()) {
-                    r.Migrate();
+					r.UpdateColor();
                 }
             }
         }

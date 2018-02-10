@@ -13,8 +13,12 @@ public enum Country : int {
 }
 
 public enum Language {
-    English,
-    Spanish
+	None=0,
+	English=1,
+    Spanish=2,
+	MandarinChinese=3,
+	Hindustani=4,
+	Arabic=5
 }
 
 public enum Status {
